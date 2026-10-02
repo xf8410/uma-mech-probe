@@ -1,0 +1,43 @@
+# 仓 B 轻量 CI：机制探索链路可跑性（上游源码零改动）
+name: 机制探索链路自检（设计器+回填往返）
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe-selftest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 装依赖（pyyaml）
+        run: pip install pyyaml
+
+      - name: 设计器输出实验矩阵
+        run: python3 probe/design.py --confidence probe/confidence.yaml --top 3
+
+      - name: 回填往返（confirm→refute→还原）
+        run: |
+          python3 probe/backfill.py --confidence probe/confidence.yaml \
+            --mech M-001 --verdict confirm --evidence out/evidence_M001.json
+          python3 probe/backfill.py --confidence probe/confidence.yaml \
+            --mech M-004 --verdict refute --evidence out/evidence_M004.json
+          python3 - <<'PY'
+          import yaml
+          b = yaml.safe_load(open('probe/confidence.yaml', encoding='utf-8'))
+          conf = {m['id']: m['confidence'] for m in b['mechanisms']}
+          assert conf['M-001'] == 0.65 and conf['M-004'] == 0.05, conf
+          print('回填断言通过')
+          PY
+
+      - name: umasim 源码未改动断言
+        run: test -f crates/umasim/Cargo.toml

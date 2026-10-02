@@ -1,43 +1,43 @@
-# uma-sim-residual
+# uma-mech-probe
 
-残差世界模型实验仓 —— 学 **umasim 预测 vs 真机实际** 的偏差，定位模拟器盲区。
+机制自主探索实验仓 —— 对模拟器**低置信机制**生成扰动实验，真机验证后回填置信度。
 
-克隆自 `xulai1001/umaai-rs`（umasim 模拟器完整保留于 `crates/umasim`，源码零改动）。
-本仓只新增 `residual/` 实验目录，不碰上游任何代码。
+克隆自 `xulai1001/umaai-rs`（umasim 完整保留于 `crates/umasim`，源码零改动）。
+本仓只新增 `probe/` 实验目录，不碰上游任何代码。
 
-## 思路
+## 思路（stmonty 式自主探索的落地变体）
 
 ```
-真机采集(hlpatch /summary 等)  ──┐
-                                ├─→ compare.py 字段级对齐 → 残差向量
-umasim 预测(同种子同输入)      ──┘        │
-                                           ▼
-                              train.py 小模型(GBDT) 学偏差
-                                           │
-                                           ▼
-                        report.py 盲区排序报告（哪类字段/哪段流程偏差最大）
+probe/confidence.yaml          机制置信度账本（初始值来自 ledger/历史考古结论）
+        │
+        ▼
+design.py 选出置信度最低的机制 → 生成扰动实验矩阵（每组含预期判据）
+        │
+        ▼
+真机跑实验（hlpatch 采集）→ collect.py 折算成判定结果
+        │
+        ▼
+backfill.py 回填 confidence.yaml（置信度↑或改写机制参数）→ 循环
 ```
-
-价值：**AI 找模拟器盲区**，而不是替代模拟器——偏差大的地方就是没逆向到的机制。
 
 ## 用法
 
 ```bash
-# 1. 对齐一次真机局与模拟器复现
-python3 residual/compare.py --sim sample/sim_turn12.json --real sample/real_turn12.json -o out/residual_turn12.json
+# 1. 列出当前最值得验证的机制
+python3 probe/design.py --confidence probe/confidence.yaml --top 3
 
-# 2. 攒够样本后训练残差模型
-python3 residual/train.py --data out/ --model out/residual_model.joblib
-
-# 3. 生成盲区报告
-python3 residual/report.py --model out/residual_model.joblib --data out/ -o out/blindspots.md
+# 2. 真机跑完后回填（判定=confirm/refute/inconclusive）
+python3 probe/backfill.py --confidence probe/confidence.yaml \
+  --mech M-001 --verdict confirm --evidence out/evidence_M001.json
 ```
 
-## 样例
+## 置信度账本初始条目
 
-`sample/` 内含一回合的最小样例（sim/real 各一份），`pytest residual/` 可直接跑通全链路。
+`confidence.yaml` 预填了 5 条拉面杯机制的当前认知（含依据出处），
+其中 `skill_evaluate_bonus`（技能评价加成的游戏内数值映射）置信度最低，
+是第一个候选实验。
 
 ## 边界
 
-- 本仓不写入 xulai1001 名下任何仓库；结论与补丁以 PR 形式提给项目组
-- 模型刻意从 GBDT 起步（可解释、CPU 可训），神经网络版等盲区清单稳定后再说
+- 本仓不写入 xulai1001 名下任何仓库；回填结论以 PR 形式提给项目组
+- 探索对象是**模拟器机制认知**，不是游戏外挂——所有实验在单机育成规则内

@@ -1,0 +1,32 @@
+mechanisms:
+- id: M-001
+  name: skill_evaluate_bonus
+  desc: 技能评价加成的游戏内数值映射（评价等级→实际加成值）
+  confidence: 0.45
+  source: uma-algo-lab GA 锚值 71415.6 反推，未经真机单变量验证
+  probe_hint: 固定其他条件，只改一个技能评价等级，比对真机加成值与 sim 表值
+- id: M-002
+  name: params_inc_dec_layout
+  desc: ParamsIncDecInfoArray 元素布局（TargetType@0x10 / Value@0x24 双 ObscuredInt）
+  confidence: 0.9
+  source: uma-3.28.2-offset-ledger 2026-10-02 struct-constants [3]，hlpatch v3.28.8
+    已修
+  probe_hint: 已在 hlpatch v3.28.8 修复，/scenario 联测即为验证
+- id: M-003
+  name: motivation_effect_range
+  desc: 干劲状态对训练效果的影响区间（-20%~+30% 假设值）
+  confidence: 0.6
+  source: 社区共识+少量对局旁证，无单变量实测
+  probe_hint: 同种子同训练只改干劲档位，取能量增量差
+- id: M-004
+  name: failure_penalty_curve
+  desc: 训练失败时的惩罚曲线（失挫率与属性回退量）
+  confidence: 0.35
+  source: 从未系统实测，现行参数为拍脑袋值
+  probe_hint: 故意堆低体量训练触发失败，记录回退量序列
+- id: M-005
+  name: ramen_event_branch_weights
+  desc: 拉面杯随机事件的分支权重（events.json 中权重字段）
+  confidence: 0.7
+  source: events.json 上游数据，部分分支经对局统计旁证
+  probe_hint: 大样本统计分支频率与权重表比对（卡方）
