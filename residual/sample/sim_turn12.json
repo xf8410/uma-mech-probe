@@ -1,0 +1,23 @@
+{
+ "turn": 12,
+ "energies": {
+  "speed": 620,
+  "stamina": 540,
+  "power": 590,
+  "guts": 300,
+  "wiz": 380
+ },
+ "skill_pt": 210,
+ "badges": [
+  {
+   "id": 101,
+   "count": 2
+  },
+  {
+   "id": 102,
+   "count": 1
+  }
+ ],
+ "motivation": 3,
+ "hp": 880
+}
